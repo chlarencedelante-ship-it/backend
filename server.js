@@ -294,11 +294,11 @@ app.post("/send-email", async (req, res) => {
         <h3>Hello ${doctorName || "Doctor"}</h3>
         <p>Please review the appointment.</p>
 
-        <a href="http://localhost:5000/accept/${appointmentId}">
+        <a href="https://backend-production-9df8.up.railway.app/accept/${appointmentId}">
           ✅ ACCEPT
         </a>
         <br/><br/>
-        <a href="http://localhost:5000/decline/${appointmentId}">
+        <a href="https://backend-production-9df8.up.railway.app/decline/${appointmentId}">
           ❌ DECLINE
         </a>
       `,
