@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================
+// PATIENT (MAIN RECORD)
+// =====================
+model Patient {
+  id         Int      @id @default(autoincrement())
+  firstName  String
+  lastName   String
+  age        Int
+  gender     String?
+  address    String?
+  contact    String?
+  occupation String?
+
+  isURTI     Boolean  @default(false) // ✅ ADDED (ONLY CHANGE)
+
+  // Relations
+  vitals     Vitals?
+  history    MedicalHistory?
+  symptoms   Symptom[]
+  appointments Appointment[]   // 🔥 NEW RELATION
+
+  createdAt  DateTime @default(now())
+}
+
+// =====================
+// VITAL SIGNS
+// =====================
+model Vitals {
+  id           Int     @id @default(autoincrement())
+  height       Float?
+  weight       Float?
+  pulseRate    Int?
+  bloodPressure String?
+  temperature  Float?
+
+  patientId Int @unique
+  patient   Patient @relation(fields: [patientId], references: [id])
+}
+
+// =====================
+// MEDICAL HISTORY
+// =====================
+model MedicalHistory {
+  id           Int    @id @default(autoincrement())
+  hasDiabetes  Boolean?
+  hasHypertension Boolean?
+  notes        String?
+
+  patientId Int @unique
+  patient   Patient @relation(fields: [patientId], references: [id])
+}
+
+// =====================
+// SYMPTOMS (MULTIPLE)
+// =====================
+model Symptom {
+  id        Int    @id @default(autoincrement())
+  name      String
+
+  patientId Int
+  patient   Patient @relation(fields: [patientId], references: [id])
+}
+
+// =====================
+// 🔥 APPOINTMENT (NEW)
+// =====================
+model Appointment {
+  id           Int      @id @default(autoincrement())
+  date         DateTime
+  status       String   @default("PENDING")
+
+  doctorEmail  String
+
+  patientId    Int
+  patient      Patient  @relation(fields: [patientId], references: [id])
+
+  createdAt    DateTime @default(now())
+}
