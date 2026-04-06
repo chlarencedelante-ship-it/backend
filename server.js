@@ -8,6 +8,17 @@ import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+// ✅ ADDED: Prisma connection handler
+async function connectDB() {
+  try {
+    await prisma.$connect();
+    console.log("✅ Database connected");
+  } catch (err) {
+    console.error("❌ Database connection failed:", err);
+    process.exit(1);
+  }
+}
+
 // PDF
 import fs from "fs";
 import PDFDocument from "pdfkit";
@@ -107,7 +118,6 @@ app.post("/send-email", async (req, res) => {
 
   try {
 
-    // ✅ URTI DETECTION
     const urtiSymptoms = [
       "Runny nose",
       "Sore throat",
@@ -120,7 +130,6 @@ app.post("/send-email", async (req, res) => {
       Array.isArray(symptoms) &&
       symptoms.filter(s => urtiSymptoms.includes(s)).length >= 2;
 
-    // ✅ SAVE PATIENT
     const patient = await prisma.patient.create({
       data: {
         firstName,
@@ -159,9 +168,6 @@ app.post("/send-email", async (req, res) => {
 
     console.log("✅ Patient saved");
 
-    // =========================
-    // ✅ SAVE APPOINTMENT
-    // =========================
     const savedAppointment = await prisma.appointment.create({
       data: {
         date: date ? new Date(date) : new Date(),
@@ -175,7 +181,6 @@ app.post("/send-email", async (req, res) => {
 
     console.log("✅ Appointment saved:", appointmentId);
 
-    // ================= PDF =================
     const doc = new PDFDocument({ margin: 50 });
     const filePath = "patient_form.pdf";
 
@@ -389,14 +394,6 @@ app.get("/urti-weekly", async (req, res) => {
         },
       });
 
-      const urtiSymptoms = [
-        "Runny nose",
-        "Sore throat",
-        "Sneezing",
-        "Mild cough",
-        "Fever",
-      ];
-
       const count = patients.filter(p => p.isURTI).length;
 
       days.push({
@@ -416,7 +413,7 @@ app.get("/urti-weekly", async (req, res) => {
   }
 });
 
-// ================= SAVE PATIENT (ONLY ADDED) =================
+// ================= SAVE PATIENT =================
 app.post("/save-patient", async (req, res) => {
   try {
     const {
@@ -492,9 +489,15 @@ app.post("/save-patient", async (req, res) => {
   }
 });
 
-// Start server
+// ✅ UPDATED START (only this part changed)
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
+async function startServer() {
+  await connectDB();
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
+}
+
+startServer();
