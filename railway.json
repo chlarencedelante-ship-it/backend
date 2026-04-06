@@ -1,5 +1,5 @@
 {
-"deploy": {
-    "startCommand": "npx prisma migrate deploy && node server.js"
-}
+  "deploy": {
+    "startCommand": "npx prisma generate && npx prisma db push && node server.js"
+  }
 }
