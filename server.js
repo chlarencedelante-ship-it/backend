@@ -83,26 +83,20 @@ app.post("/send-email", async (req, res) => {
     doctorName,
     date,
     message,
-
     occupation,
-
     height,
     weight,
     pulseRate,
     bloodPressure,
     temperature,
-
     pastIllness,
     medications,
     allergies,
     smoker,
     alcoholUse,
-
     familyHypertension,
     familyDiabetes,
-
     symptoms,
-
     firstName,
     middleName,
     lastName,
@@ -140,7 +134,6 @@ app.post("/send-email", async (req, res) => {
         address,
         contact,
         occupation,
-
         vitals: {
           create: {
             height: height ? parseFloat(height) : null,
@@ -150,7 +143,6 @@ app.post("/send-email", async (req, res) => {
             temperature: temperature ? parseFloat(temperature) : null,
           },
         },
-
         history: {
           create: {
             hasDiabetes: familyDiabetes || false,
@@ -158,7 +150,6 @@ app.post("/send-email", async (req, res) => {
             notes: pastIllness || null,
           },
         },
-
         symptoms: {
           create: Array.isArray(symptoms)
             ? symptoms.map((s) => ({ name: s }))
@@ -184,50 +175,53 @@ app.post("/send-email", async (req, res) => {
 
     const doc = new PDFDocument({ margin: 50 });
 
-    // ✅ FIXED: Use memory instead of file
     const stream = new PassThrough();
     const chunks = [];
 
     stream.on("data", (chunk) => chunks.push(chunk));
 
+    // ✅ FIXED: ensure response ALWAYS returns
     stream.on("end", async () => {
-      const pdfBuffer = Buffer.concat(chunks);
+      try {
+        const pdfBuffer = Buffer.concat(chunks);
 
-      const mailOptions = {
-        from: `"Health App" <chlarencedelante@gmail.com>`,
-        to: doctorEmail,
-        subject: "New Appointment Request",
-        html: `
-          <h3>Hello ${doctorName || "Doctor"}</h3>
-          <p>Please review the appointment.</p>
+        await transporter.sendMail({
+          from: `"Health App" <${process.env.EMAIL_USER}>`,
+          to: doctorEmail,
+          subject: "New Appointment Request",
+          html: `
+            <h3>Hello ${doctorName || "Doctor"}</h3>
+            <p>Please review the appointment.</p>
 
-          <a href="https://backend-production-9df8.up.railway.app/accept/${appointmentId}">
-            ✅ ACCEPT
-          </a>
-          <br/><br/>
-          <a href="https://backend-production-9df8.up.railway.app/decline/${appointmentId}">
-            ❌ DECLINE
-          </a>
-        `,
-        attachments: [
-          {
-            filename: "patient_form.pdf",
-            content: pdfBuffer, // ✅ FIXED
-          },
-        ],
-      };
+            <a href="https://backend-production-9df8.up.railway.app/accept/${appointmentId}">✅ ACCEPT</a>
+            <br/><br/>
+            <a href="https://backend-production-9df8.up.railway.app/decline/${appointmentId}">❌ DECLINE</a>
+          `,
+          attachments: [
+            {
+              filename: "patient_form.pdf",
+              content: pdfBuffer,
+            },
+          ],
+        });
 
-      await transporter.sendMail(mailOptions);
+        res.json({
+          success: true,
+          appointmentId,
+        });
 
-      res.json({
-        success: true,
-        appointmentId,
-      });
+      } catch (err) {
+        console.error("❌ Email/PDF error:", err);
+
+        res.status(500).json({
+          success: false,
+          error: err.message,
+        });
+      }
     });
 
     doc.pipe(stream);
 
-    // (PDF content unchanged)
     doc.fontSize(12).text("Republic of the Philippines", { align: "center" });
     doc.text("Barangay Leon Garcia", { align: "center" });
     doc.text("Health Center", { align: "center" });
@@ -252,8 +246,6 @@ app.post("/send-email", async (req, res) => {
     });
   }
 });
-
-// (REST OF YOUR CODE UNCHANGED)
 
 // ✅ START SERVER
 const PORT = process.env.PORT || 5000;
